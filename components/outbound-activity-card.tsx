@@ -1,6 +1,8 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
+import { OrderDetailModal } from "./order-detail-modal"
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 interface OutboundActivityCardProps {
   orders: OutboundActivity[]
@@ -8,7 +10,25 @@ interface OutboundActivityCardProps {
 }
 
 export function OutboundActivityCard({ orders, status }: OutboundActivityCardProps) {
+  const [selectedOrder, setSelectedOrder] = useState<OutboundActivityDetail | null>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const handleOrderClick = async (order: OutboundActivity) => {
+    // setSelectedOrder(order)
+    setIsModalOpen(true)
+
+    const res = await fetch(
+      `/api/operations/outbound-activity-detail?shipment_id=${order.shipment_id}`
+    )
+    const data = await res.json()
+    // setDetail(data)
+    if (data.activity && data.activity.length > 0) {
+      // setSelectedOrder(data.activity[0]) // assuming activity is an array4
+      // isModalOpen(true)
+      setSelectedOrder(data.activity[0])
+    }
+  }
 
   // Auto-scroll functionality
   useEffect(() => {
@@ -89,31 +109,51 @@ export function OutboundActivityCard({ orders, status }: OutboundActivityCardPro
   }
 
   return (
-    <div
-      ref={scrollContainerRef}
-      className="flex gap-2 overflow-x-auto pb-2 scroll-smooth"
-      style={{ scrollBehavior: "smooth" }}
-    >
-      {orders.map((order) => (
-        <div
-          key={order.id}
-          className={`flex-shrink-0 w-60 ${colors.bg} border ${colors.border} rounded-lg p-3 transition-all hover:shadow-lg hover:scale-105 duration-300 cursor-pointer`}
-        >
-          {/* Header */}
-          <div className="flex justify-between items-start mb-2">
-            <div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-0.5">{order.outbound_no}</h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-1">{order.customer_name}</p>
-              
-            </div>
-            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${colors.badge}`}>
-              {status}
-            </span>
-          </div>
+    <>
+      <div
+        ref={scrollContainerRef}
+        className="flex gap-2 overflow-x-auto pb-2 scroll-smooth"
+        style={{ scrollBehavior: "smooth" }}
+      >
+        {orders.map((order) => (
+          <div
+            onClick={() => handleOrderClick(order)}
+            key={order.id}
+            className={`flex-shrink-0 w-60 ${colors.bg} border ${colors.border} rounded-lg p-2 transition-all hover:shadow-lg hover:scale-105 duration-300 cursor-pointer`}
+          >
+            {/* Header */}
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-0.5">{order.shipment_id}</h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-1">{order.customer_name}</p>
 
-          {/* Quantity Section */}
-          <div className="space-y-2 mb-2">
-            <div className="flex justify-between items-center text-xs">
+              </div>
+              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${colors.badge}`}>
+                {status}
+              </span>
+            </div>
+
+            {/* Quantity Section */}
+            <div className="space-y-2 mb-3">
+
+              <table className="w-full text-xs mb-1">
+                <thead>
+                  <tr className="border-none border-slate-200 dark:border-slate-700">
+                    <th className="py-1 font-medium text-slate-600 dark:text-slate-400 text-center">Plan</th>
+                    <th className="text-center py-1 font-medium text-slate-600 dark:text-slate-400">Pick</th>
+                    <th className="text-center py-1 font-medium text-slate-600 dark:text-slate-400">Scan</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="py-1 font-bold text-slate-900 dark:text-white text-center">{order.quantity_req}</td>
+                    <td className="py-1 font-bold text-slate-900 dark:text-white text-center">{order.quantity_pick}</td>
+                    <td className="py-1 font-bold text-slate-900 dark:text-white text-center">{order.quantity_scan}</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              {/* <div className="flex justify-between items-center text-xs">
               <span className="text-slate-600 dark:text-slate-400">Qty Request</span>
               <span className="font-bold text-slate-900 dark:text-white">{order.quantity_req}</span>
             </div>
@@ -121,9 +161,13 @@ export function OutboundActivityCard({ orders, status }: OutboundActivityCardPro
               <span className="text-slate-600 dark:text-slate-400">Qty Picked</span>
               <span className="font-bold text-slate-900 dark:text-white">{order.quantity_pick}</span>
             </div>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-slate-600 dark:text-slate-400">Qty Scan</span>
+              <span className="font-bold text-slate-900 dark:text-white">{order.quantity_scan}</span>
+            </div> */}
 
-            {/* Progress Bar */}
-            {/* <div className="mt-2">
+              {/* Progress Bar */}
+              {/* <div className="mt-2">
               <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
                 <div
                   className={`h-1.5 rounded-full transition-all duration-500 ${
@@ -138,21 +182,23 @@ export function OutboundActivityCard({ orders, status }: OutboundActivityCardPro
                 {order.qtyRequest > 0 ? Math.round((order.qtyPicked / order.qtyRequest) * 100) : 0}%
               </p>
             </div> */}
-          </div>
+            </div>
 
-          {/* Footer */}
-          <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
-            <span className="text-lg">{colors.icon}</span>
-            <span className="text-xs text-slate-500 dark:text-slate-500">
-              {order.outbound_date && (
-                <p className="text-xs text-slate-500 dark:text-slate-500 mb-3">
-                  {new Date(order.outbound_date).toLocaleDateString("id-ID")}
-                </p>
-              )}
-            </span>
+            {/* Footer */}
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
+              <span className="text-lg">{colors.icon}</span>
+              <span className="text-xs text-slate-500 dark:text-slate-500">
+                {order.outbound_date && (
+                  <p className="text-xs text-slate-500 dark:text-slate-500 mb-3">
+                    {new Date(order.outbound_date).toLocaleDateString("id-ID")}
+                  </p>
+                )}
+              </span>
+            </div>
           </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+      <OrderDetailModal isOpen={isModalOpen} order={selectedOrder} onClose={() => setIsModalOpen(false)} />
+    </>
   )
 }

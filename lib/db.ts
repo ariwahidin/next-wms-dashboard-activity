@@ -36,8 +36,22 @@ export async function getPool() {
   return pool;
 }
 
-export async function queryDB(query: string) {
-  const pool = await getPool();
-  const result = await pool.request().query(query);
+// export async function queryDB(query: string) {
+//   const pool = await getPool();
+//   const result = await pool.request().query(query);
+//   return result.recordset;
+// }
+
+export async function queryDB(query: string, params?: Record<string, any>) {
+  const pool = await sql.connect(config);
+  const request = pool.request();
+
+  if (params) {
+    for (const key in params) {
+      request.input(key, params[key]);
+    }
+  }
+
+  const result = await request.query(query);
   return result.recordset;
 }

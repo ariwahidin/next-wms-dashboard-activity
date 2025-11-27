@@ -37,7 +37,7 @@ export default function Home() {
     if (searchQuery.trim() !== "") {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(
-        (order) => order.outbound_no?.toLowerCase().includes(query) || order.customer_name?.toLowerCase().includes(query),
+        (order) => order.shipment_id?.toLowerCase().includes(query) || order.customer_name?.toLowerCase().includes(query),
       )
     }
 

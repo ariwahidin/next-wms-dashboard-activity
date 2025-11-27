@@ -24,7 +24,7 @@ export function PageWrapper({ title, description, children, actions }: PageWrapp
       </div> */}
 
       {/* Content */}
-      <main className="mx-auto max-w-7xl px-6 py-4">{children}</main>
+      <main className="mx-auto max-w-7xl px-6 py-3">{children}</main>
     </div>
   )
 }
