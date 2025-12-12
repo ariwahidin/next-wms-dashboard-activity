@@ -43,6 +43,8 @@ export interface Warehouse {
 // }
 
 export type ChartDataPoint = {
+  item_code?: string
+  gmc?: string
   name: string
   value: number
   value2?: number

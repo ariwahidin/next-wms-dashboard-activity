@@ -68,7 +68,9 @@ export function InventoryTable({ data, title = "Inventory", itemsPerPage = 10 }:
           <table className="w-full text-xs">
             <thead>
               <tr className="border-t border-border bg-muted/50">
-                <th className="px-4 py-2 text-left font-medium text-muted-foreground">Name</th>
+                <th className="px-4 py-2 text-left font-medium text-muted-foreground">GMC</th>
+                <th className="px-4 py-2 text-left font-medium text-muted-foreground">Item Code</th>
+                <th className="px-4 py-2 text-left font-medium text-muted-foreground">Item Name</th>
                 <th className="px-4 py-2 text-left font-medium text-muted-foreground">Category</th>
                 <th className="px-4 py-2 text-right font-medium text-muted-foreground">Qty</th>
               </tr>
@@ -77,6 +79,8 @@ export function InventoryTable({ data, title = "Inventory", itemsPerPage = 10 }:
               {paginatedData.length > 0 ? (
                 paginatedData.map((item, idx) => (
                   <tr key={item.id || idx} className="border-t border-border hover:bg-muted/30 transition-colors">
+                    <td className="px-4 py-2">{item.gmc}</td>
+                    <td className="px-4 py-2">{item.item_code}</td>
                     <td className="px-4 py-2">{item.name}</td>
                     <td className="px-4 py-2 text-muted-foreground">{item.category || "-"}</td>
                     <td className="px-4 py-2 text-right font-medium">{item.quantity ?? item.value ?? 0}</td>

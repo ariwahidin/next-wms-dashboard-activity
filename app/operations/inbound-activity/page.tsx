@@ -1,30 +1,30 @@
 "use client"
 
 import { useState, useEffect, use } from "react"
-import { OutboundActivityCard } from "@/components/outbound/outbound-activity-card"
-import { SearchBar } from "@/components/outbound/search-bar"
+import { SearchBar } from "@/components/inbound/search-bar"
 import { TopNav } from "@/components/navigation/top-nav"
 import { PageWrapper } from "@/components/shared/page-wrapper"
 import { Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import useSWR from "swr"
+import { InboundActivityCard } from "@/components/inbound/inbound-activity-card"
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 
-export default function Home() {
+export default function Page() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedDate, setSelectedDate] = useState<string>("")
-  const [orders, setOrders] = useState<OutboundActivity[]>([])
-  const [filteredOrders, setFilteredOrders] = useState<OutboundActivity[]>([])
-  const { data, error, isLoading } = useSWR('/api/operations/outbound-activity', fetcher);
+  const [orders, setOrders] = useState<InboundActivity[]>([])
+  const [filteredOrders, setFilteredOrders] = useState<InboundActivity[]>([])
+  const { data, error, isLoading } = useSWR('/api/operations/inbound-activity', fetcher);
 
   useEffect(() => {
-    document.title = "Outbound - WMS Activity";
+    document.title = "Inbound - WMS Activity";
   }, []);
 
   useEffect(() => {
     if (!data) return;
-    console.log("Fetched outbound activity data:", data);
+    console.log("Fetched inbound activity data:", data);
     setOrders(data.activity || []);
     setFilteredOrders(data.activity || []);
 
@@ -41,7 +41,7 @@ export default function Home() {
     if (searchQuery.trim() !== "") {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(
-        (order) => order.shipment_id?.toLowerCase().includes(query) || order.customer_name?.toLowerCase().includes(query),
+        (order) => order.receipt_id?.toLowerCase().includes(query) || order.supplier_name?.toLowerCase().includes(query),
       )
     }
 
@@ -49,7 +49,7 @@ export default function Home() {
     if (selectedDate) {
       console.log("selectedDate", selectedDate)
       console.log("filtered", filtered)
-      filtered = filtered.filter((order) => order.outbound_date === selectedDate)
+      filtered = filtered.filter((order) => order.inbound_date === selectedDate)
     }
 
     setFilteredOrders(filtered)
@@ -57,7 +57,7 @@ export default function Home() {
 
   // Group orders by status
   const openOrders = filteredOrders.filter((o) => o.status === "open")
-  const pickingOrders = filteredOrders.filter((o) => o.status === "picking")
+  const receivedOrders = filteredOrders.filter((o) => o.status === "fully received" || o.status === "partially received" || o.status === "checking")
   const completeOrders = filteredOrders.filter((o) => o.status === "complete")
 
   const formatDate = (dateString: string) => {
@@ -73,11 +73,11 @@ export default function Home() {
 
     <>
       <TopNav />
-      <PageWrapper title="Outbound Activity" description="">
+      <PageWrapper title="Inbound Activity" description="">
 
         {/* Header */}
         <div className="mb-3">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">Outbound Activity</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">Inbound Activity</h1>
         </div>
 
         {/* Search Bar and Date Filter */}
@@ -115,16 +115,16 @@ export default function Home() {
               <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
               Open ({openOrders.length})
             </h2>
-            <OutboundActivityCard orders={openOrders} status="open" />
+            <InboundActivityCard orders={openOrders} status="open" />
           </div>
 
           {/* Picking Orders */}
           <div>
             <h2 className="text-sm font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
               <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-              Picking ({pickingOrders.length})
+              Check in ({receivedOrders.length})
             </h2>
-            <OutboundActivityCard orders={pickingOrders} status="picking" />
+            <InboundActivityCard orders={receivedOrders} status={"checking"}  />
           </div>
 
           {/* Complete Orders */}
@@ -133,7 +133,7 @@ export default function Home() {
               <span className="w-2 h-2 bg-green-500 rounded-full"></span>
               Complete ({completeOrders.length})
             </h2>
-            <OutboundActivityCard orders={completeOrders} status="complete" />
+            <InboundActivityCard orders={completeOrders} status="complete" />
           </div>
         </div>
       </PageWrapper>
