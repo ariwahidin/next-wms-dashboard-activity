@@ -84,23 +84,23 @@ export default function Dashboard() {
   );
 
 
-  useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isLoggedIn")
-    const email = localStorage.getItem("userEmail")
+  // useEffect(() => {
+  //   const isLoggedIn = localStorage.getItem("isLoggedIn")
+  //   const email = localStorage.getItem("userEmail")
 
-    if (!isLoggedIn) {
-      router.push("/login")
-      return
-    }
+  //   if (!isLoggedIn) {
+  //     router.push("/login")
+  //     return
+  //   }
 
-    setUserEmail(email || "")
-    setIsReady(true)
-  }, [router])
+  //   setUserEmail(email || "")
+  //   setIsReady(true)
+  // }, [router])
 
 
-  if (!isReady) {
-    return null
-  }
+  // if (!isReady) {
+  //   return null
+  // }
 
   const inventoryData: ChartDataPoint[] = stocks.map((item, index) => ({
     id: item.item_code,
