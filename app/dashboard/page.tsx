@@ -37,6 +37,10 @@ export default function Dashboard() {
   const [outboundData, setOutboundData] = useState<OutboundTransactionByDate[]>([]);
 
   useEffect(() => {
+    document.title = "Dashboard - WMS Activity";
+  }, []);
+
+  useEffect(() => {
     if (!orders) return;
     console.log("Fetched orders data:", orders);
     setTransactions(orders.activity || []);

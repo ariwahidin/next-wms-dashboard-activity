@@ -10,7 +10,7 @@ export default function LoadingPage() {
   useEffect(() => {
     setTimeout(() => {
       router.replace("/login")
-    }, 6000); // Simulate loading delay
+    }, 2000); // Simulate loading delay
   }, [router])
 
   return <LoadingScreen />

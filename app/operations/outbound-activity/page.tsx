@@ -19,6 +19,10 @@ export default function Home() {
   const { data, error, isLoading } = useSWR('/api/operations/outbound-activity', fetcher);
 
   useEffect(() => {
+    document.title = "Operations - WMS Activity";
+  }, []);
+
+  useEffect(() => {
     if (!data) return;
     console.log("Fetched outbound activity data:", data);
     setOrders(data.activity || []);
