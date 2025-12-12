@@ -1,200 +1,286 @@
-"use client"
+// app/components/LogisticsDashboard.tsx
+'use client';
 
-import { TopNav } from "@/components/navigation/top-nav"
-import { PageWrapper } from "@/components/shared/page-wrapper"
-import { MetricsCard } from "@/components/dashboard/metrics-card"
-import { InventoryChart } from "@/components/dashboard/inventory-chart"
-import { StockLevelChart } from "@/components/dashboard/stock-level-chart"
-import { InboundOutbound } from "@/components/dashboard/inbound-outbound"
-import { WarehouseHeatmap } from "@/components/dashboard/warehouse-heatmap"
-import { inventoryTrendData, stockLevelByWarehouse, inboundOutboundData } from "@/data/dummy-analytics"
-import { warehouses } from "@/data/dummy-warehouse"
-import { inventoryItems } from "@/data/dummy-inventory"
-import type { ChartDataPoint, MetricCard, OutboundTransaction, OutboundTransactionByDate } from "@/types"
-import { InventoryTable } from "@/components/dashboard/inventory-table"
-import { OutboundBarChart } from "@/components/dashboard/outbound-bar-chart"
-import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
-import useSWR from 'swr';
-import { Transactions } from "@/types/dashboard"
-const fetcher = (url: string) => fetch(url).then(res => res.json());
+import React, { useState, useEffect } from 'react';
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Package, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
+import { TopNav } from '@/components/navigation/top-nav';
+import { PageWrapper } from '@/components/shared/page-wrapper';
 
-export default function Dashboard() {
-  // Calculate metrics
-  const router = useRouter()
-  const totalInventory = inventoryItems.reduce((sum, item) => sum + item.quantity, 0)
-  const lowStockCount = inventoryItems.filter((item) => item.status === "low-stock").length
-  const outOfStockCount = inventoryItems.filter((item) => item.status === "out-of-stock").length
-  const totalWarehouses = warehouses.length
-  const totalCapacity = warehouses.reduce((sum, w) => sum + w.capacity, 0)
-  const totalLoad = warehouses.reduce((sum, w) => sum + w.currentLoad, 0)
-  const utilization = ((totalLoad / totalCapacity) * 100).toFixed(1)
-  const [userEmail, setUserEmail] = useState("")
-  const [isReady, setIsReady] = useState(false)
-  const { data: orders, error, isLoading } = useSWR('/api/main-dashboard', fetcher);
-  const [transactions, setTransactions] = useState<Transactions[]>([]);
-  const [stocks, setStocks] = useState<InventoryItem[]>([]);
-  const [outboundData, setOutboundData] = useState<OutboundTransactionByDate[]>([]);
+interface DailyData {
+  date: string;
+  count: number;
+}
+
+interface StatusData {
+  name: string;
+  value: number;
+}
+
+interface LogisticsData {
+  inboundDaily: DailyData[];
+  outboundDaily: DailyData[];
+  inboundStatus: StatusData[];
+  outboundStatus: StatusData[];
+}
+
+const LogisticsDashboard: React.FC = () => {
+  const [selectedMonth, setSelectedMonth] = useState<string>('2024-11');
+  const [inboundData, setInboundData] = useState<DailyData[]>([]);
+  const [outboundData, setOutboundData] = useState<DailyData[]>([]);
+  const [inboundStatus, setInboundStatus] = useState<StatusData[]>([]);
+  const [outboundStatus, setOutboundStatus] = useState<StatusData[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    document.title = "Dashboard - WMS Activity";
-  }, []);
+    fetchData();
+  }, [selectedMonth]);
 
-  useEffect(() => {
-    if (!orders) return;
-    console.log("Fetched orders data:", orders);
-    setTransactions(orders.activity || []);
-    setStocks(orders.stock || []);
-    setOutboundData(orders.outbound || []);
-  }, [orders]);
-
-  const inboundCount =
-    transactions?.reduce((total, order) => {
-      if (order.trans_type === "inbound") return total + 1;
-      return total;
-    }, 0) || 0;
-
-  const outboundCount =
-    transactions?.reduce((total, order) => {
-      if (order.trans_type === "outbound") return total + 1;
-      return total;
-    }, 0) || 0;
-
-  const totalQtyIn = stocks?.reduce(
-    (sum, item) => sum + (item.qty_in || 0),
-    0
-  );
-
-  const totalQtyOut = stocks?.reduce(
-    (sum, item) => sum + (item.qty_out || 0),
-    0
-  );
-
-  const totalQtyOnHand = stocks?.reduce(
-    (sum, item) => sum + (typeof item.qty_onhand === "string" ? parseInt(item.qty_onhand) : (item.qty_onhand ?? 0)),
-    0
-  );
-  const totalQtyAvailable = stocks?.reduce(
-    (sum, item) => sum + (typeof item.qty_available === "string" ? parseInt(item.qty_available) : (item.qty_available ?? 0)),
-    0
-  );
-  const totalQtyAllocated = stocks?.reduce(
-    (sum, item) => sum + (typeof item.qty_allocated === "string" ? parseInt(item.qty_allocated) : (item.qty_allocated ?? 0)),
-    0
-  );
-
-
-  useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isLoggedIn")
-    const email = localStorage.getItem("userEmail")
-
-    if (!isLoggedIn) {
-      router.push("/login")
-      return
+  const fetchData = async (): Promise<void> => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/logistics?month=${selectedMonth}`);
+      const data: LogisticsData = await response.json();
+      
+      setInboundData(data.inboundDaily);
+      setOutboundData(data.outboundDaily);
+      setInboundStatus(data.inboundStatus);
+      setOutboundStatus(data.outboundStatus);
+    } catch (error) {
+      console.error('Error fetching data:', error);
     }
+    setLoading(false);
+  };
 
-    setUserEmail(email || "")
-    setIsReady(true)
-  }, [router])
+  const monthOptions = [
+    { value: '2025-10', label: 'Oktober 2025' },
+    { value: '2025-11', label: 'November 2025' },
+    { value: '2025-12', label: 'Desember 2025' }
+  ];
 
+  const COLORS_INBOUND = ['#3B82F6', '#8B5CF6', '#10B981', '#06B6D4'];
+  const COLORS_OUTBOUND = ['#F59E0B', '#EF4444', '#10B981'];
 
-  if (!isReady) {
-    return null
+  const totalInbound = inboundData.reduce((sum, item) => sum + item.count, 0);
+  const totalOutbound = outboundData.reduce((sum, item) => sum + item.count, 0);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
   }
-
-  const inventoryData: ChartDataPoint[] = stocks.map((item, index) => ({
-    id: item.item_code,
-    name: item.item_name,
-    sku: item.item_code,
-    category: item.category,
-    quantity: item.qty_available || 0,
-    status:
-      (item.qty_available || 0) === 0
-        ? "out-of-stock"
-        : (item.qty_available || 0) < 10
-          ? "low-stock"
-          : "in-stock",
-    value: item.qty_available || 0,
-  }));
-
-
-  const metrics: MetricCard[] = [
-    {
-      id: "inbound-pending",
-      label: "Inbound Pending",
-      value: inboundCount,
-      unit: "orders",
-      trend: 0,
-      trendDirection: "up",
-      icon: "⬇️",
-      color: "primary",
-    },
-    {
-      id: "outbound-pending",
-      label: "Outbound Pending",
-      value: outboundCount,
-      unit: "orders",
-      trend: 0,
-      trendDirection: "down",
-      icon: "⬆️",
-      color: "warning",
-    },
-    {
-      id: "stock-on-hand",
-      label: "Stock On Hand",
-      value: totalQtyOnHand,
-      unit: "",
-      icon: "📦",
-      color: "primary",
-    },
-    {
-      id: "stock-allocations",
-      label: "Stock Allocations",
-      value: totalQtyAllocated,
-      unit: "",
-      icon: "🚫",
-      color: "info",
-    },
-    {
-      id: "stock-availability",
-      label: "Stock Availability",
-      value: totalQtyAvailable,
-      unit: "",
-      icon: "✅",
-      color: "success",
-    },
-  ]
 
   return (
     <>
-      <TopNav />
-      <PageWrapper title="Dashboard" description="Warehouse Management System Overview">
-
+    <TopNav />
+    <PageWrapper title="Dashboard" description="Warehouse Management System Overview">
+    {/* <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6"> */}
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-3">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">Main Dashboard</h1>
-          {/* <p className="text-xs text-slate-600 dark:text-slate-400">
-            Kelola dan pantau status pengiriman pesanan Anda secara real-time
-          </p> */}
+        {/* <div className="mb-8">
+          <h1 className="text-4xl font-bold text-white mb-2">Logistics Dashboard</h1>
+          <p className="text-slate-400">Monitor transaksi inbound dan outbound secara real-time</p>
+        </div> */}
+
+        {/* Month Selector */}
+        <div className="mb-6 mt-4 flex items-center gap-3">
+          <Calendar className="text-blue-400" size={24} />
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            className="bg-slate-800 text-white px-4 py-2 rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {monthOptions.map(option => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
         </div>
 
-        {/* Metrics */}
-        <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
-          {metrics.map((metric) => (
-            <MetricsCard key={metric.id} metric={metric} />
-          ))}
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-6 shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-3 rounded-lg">
+                  <TrendingDown className="text-white" size={28} />
+                </div>
+                <div>
+                  <p className="text-blue-100 text-sm">Total Inbound</p>
+                  <p className="text-white text-3xl font-bold">{totalInbound}</p>
+                </div>
+              </div>
+            </div>
+            <div className="text-blue-100 text-sm">Transaksi masuk bulan ini</div>
+          </div>
+
+          <div className="bg-gradient-to-br from-orange-600 to-orange-700 rounded-xl p-6 shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-3 rounded-lg">
+                  <TrendingUp className="text-white" size={28} />
+                </div>
+                <div>
+                  <p className="text-orange-100 text-sm">Total Outbound</p>
+                  <p className="text-white text-3xl font-bold">{totalOutbound}</p>
+                </div>
+              </div>
+            </div>
+            <div className="text-orange-100 text-sm">Transaksi keluar bulan ini</div>
+          </div>
         </div>
 
-        {/* Charts Grid */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* <InventoryChart data={inventoryTrendData} /> */}
-          <InventoryTable data={inventoryData} title="Stock Available" />
-          <OutboundBarChart data={outboundData} title="Outbound Transactions Chart" />
-          {/* <StockLevelChart data={stockLevelByWarehouse} />
-          <InboundOutbound data={inboundOutboundData} />
-          <WarehouseHeatmap /> */}
+        {/* Bar Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 mb-8">
+          {/* Inbound Bar Chart */}
+          <div className="bg-slate-800 rounded-xl p-6 shadow-xl border border-slate-700">
+            <div className="flex items-center gap-2 mb-4">
+              <Package className="text-blue-400" size={24} />
+              <h2 className="text-xl font-bold text-white">Transaksi Inbound Harian</h2>
+            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={inboundData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <XAxis 
+                  dataKey="date" 
+                  stroke="#94A3B8"
+                  tick={{ fill: '#94A3B8', fontSize: 12 }}
+                />
+                <YAxis stroke="#94A3B8" tick={{ fill: '#94A3B8' }} />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#1E293B', 
+                    border: '1px solid #334155',
+                    borderRadius: '8px',
+                    color: '#fff'
+                  }}
+                />
+                <Bar dataKey="count" fill="#3B82F6" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Outbound Bar Chart */}
+          <div className="bg-slate-800 rounded-xl p-6 shadow-xl border border-slate-700">
+            <div className="flex items-center gap-2 mb-4">
+              <Package className="text-orange-400" size={24} />
+              <h2 className="text-xl font-bold text-white">Transaksi Outbound Harian</h2>
+            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={outboundData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <XAxis 
+                  dataKey="date" 
+                  stroke="#94A3B8"
+                  tick={{ fill: '#94A3B8', fontSize: 12 }}
+                />
+                <YAxis stroke="#94A3B8" tick={{ fill: '#94A3B8' }} />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#1E293B', 
+                    border: '1px solid #334155',
+                    borderRadius: '8px',
+                    color: '#fff'
+                  }}
+                />
+                <Bar dataKey="count" fill="#F59E0B" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-      </PageWrapper>
+
+        {/* Pie Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Inbound Status Pie */}
+          <div className="bg-slate-800 rounded-xl p-6 shadow-xl border border-slate-700">
+            <h2 className="text-xl font-bold text-white mb-4">Status Inbound</h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={inboundStatus}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }: { name: string; percent: number }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {inboundStatus.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS_INBOUND[index % COLORS_INBOUND.length]} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#1E293B', 
+                    border: '1px solid #334155',
+                    borderRadius: '8px',
+                    color: '#fff'
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              {inboundStatus.map((status, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <div 
+                    className="w-4 h-4 rounded"
+                    style={{ backgroundColor: COLORS_INBOUND[idx] }}
+                  />
+                  <span className="text-slate-300 text-sm">{status.name}: {status.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Outbound Status Pie */}
+          <div className="bg-slate-800 rounded-xl p-6 shadow-xl border border-slate-700">
+            <h2 className="text-xl font-bold text-white mb-4">Status Outbound</h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={outboundStatus}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }: { name: string; percent: number }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {outboundStatus.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS_OUTBOUND[index % COLORS_OUTBOUND.length]} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#1E293B', 
+                    border: '1px solid #334155',
+                    borderRadius: '8px',
+                    color: '#fff'
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              {outboundStatus.map((status, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <div 
+                    className="w-4 h-4 rounded"
+                    style={{ backgroundColor: COLORS_OUTBOUND[idx] }}
+                  />
+                  <span className="text-slate-300 text-sm">{status.name}: {status.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    {/* </div> */}
+    </PageWrapper>
     </>
-  )
-}
+  );
+};
+
+export default LogisticsDashboard;

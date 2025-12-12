@@ -14,6 +14,9 @@ interface OutboundBarChartProps {
 }
 
 export function OutboundBarChart({ data, title = "Outbound Transactions Chart" }: OutboundBarChartProps) {
+
+    console.log("data outbound bar chart: ", data)
+
     const safeData = Array.isArray(data) ? data : []
     const currentDate = new Date()
 
