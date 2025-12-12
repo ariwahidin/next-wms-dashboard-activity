@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      user: decoded, // { id, username, email }
+      user: decoded,
     });
   } catch {
     return NextResponse.json({ success: false, user: null }, { status: 401 });

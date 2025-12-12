@@ -55,6 +55,7 @@ export function TopNav() {
 
     try {
       await fetch("/api/auth/logout", {
+        credentials: "include",
         method: "POST",
       })
 
@@ -69,7 +70,9 @@ export function TopNav() {
 
   useEffect(() => {
     const getUser = async () => {
-      const res = await fetch("/api/auth/me")
+      const res = await fetch("/api/auth/me", {
+        credentials: "include",
+      })
       const data = await res.json()
 
       if (data.success) {
@@ -309,7 +312,7 @@ export function TopNav() {
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Header with gradient */}
             <div className="h-2 bg-gradient-to-r from-blue-500 via-orange-500 to-cyan-500"></div>
-            
+
             <div className="p-6">
               {/* Icon */}
               <div className="mx-auto w-16 h-16 bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg">

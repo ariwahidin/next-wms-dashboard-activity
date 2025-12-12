@@ -10,7 +10,7 @@ export async function POST() {
   res.cookies.set("token", "", {
     httpOnly: true,
     secure: false, // true kalau production HTTPS
-    sameSite: "strict",
+    sameSite: "lax",
     path: "/",
     expires: new Date(0),  // expired langsung
   });
