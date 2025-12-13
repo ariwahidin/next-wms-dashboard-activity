@@ -20,6 +20,7 @@ const navItems: NavItem[] = [
     items: [
       { label: "Inbound", href: "/operations/inbound-activity" },
       { label: "Outbound", href: "/operations/outbound-activity" },
+      { label: "Outbound History", href: "/operations/outbound-history" },
       { label: "Inventory", href: "/operations/inventory" },
     ],
   },
