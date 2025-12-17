@@ -68,10 +68,22 @@ export async function GET(req: NextRequest) {
         )
         SELECT * FROM ob WHERE ${column} LIKE @keyword
     `
-
         const rows = await queryDB(query, {
             keyword: `%${keyword}%`
         })
+
+        if (rows.length === 0) {
+
+            // Get from old data 
+            const oldQuery = `SELECT *, transporter as transporter_name FROM outbound_history_1 WHERE ${column} LIKE @keyword`
+            const oldRows = await queryDB(oldQuery, {
+                keyword: `%${keyword}%`
+            })
+
+            return NextResponse.json({ success: true, data: oldRows })
+        }
+
+
         return NextResponse.json({ success: true, data: rows })
     } catch (err) {
         console.error("API logistics error:", err)
