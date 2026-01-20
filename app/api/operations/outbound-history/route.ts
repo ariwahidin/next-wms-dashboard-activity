@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
         SELECT
         a.shipment_id, d.quantity,
         a.outbound_date, a.outbound_no, b.customer_name as customer,
-        e.[name] as [pic_scan], CONVERT(varchar(16), a.created_at, 120) AS [tanggal_scan], 
+        e.[name] as [pic_scan], CONVERT(varchar(16), d.created_at, 120) AS [tanggal_scan], 
         f.order_no as [spk_number], g.load_date as delivery_date, g.driver, g.transporter_name, 
         g.truck_size, g.truck_no, f.remarks as [remarks_spk_dtl],
         c.item_code, c.barcode as ean, d.serial_number 
